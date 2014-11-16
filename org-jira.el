@@ -187,6 +187,22 @@ All the other properties are optional. They over-ride the global variables.
        (org-narrow-to-subtree)
        ,@body)))
 
+(defun hash (dlist dhash)
+  "Convert a list to hash and return that hash."
+  (progn (new-list-to-hash dlist dhash)
+         dhash))
+
+(defun new-list-to-hash (dlist dhash)
+  "Given a nested list, convert it into a hash-table."
+  (mapc (lambda (x)
+          (puthash (car x)
+                   (if (and (equal 'cons (type-of (cdr x)))
+                            (not (equal 'string (type-of (car (cdr x))))))
+                       (hash (car (cdr x)) (make-hash-table :test 'equal))
+                     (cdr x))
+                   dhash))
+        dlist))
+
 (defun org-jira-kill-buffer-hook ()
   "Prompt before killing buffer."
   (if (and org-jira-buffer-kill-prompt
@@ -399,12 +415,12 @@ to you, but you can customize jql with a prefix argument. See
                       (unless (looking-at "^")
                         (insert "\n"))
                       (insert "* "))
-		    (let ((status (org-jira-get-issue-val 'status issue)))
-		      (insert (concat (cond (org-jira-use-status-as-todo
-					     (upcase (replace-regexp-in-string " " "-" status)))
-					    ((member status '("Closed" "Resolved")) "DONE")
-					    ("TODO")) " "
-                                    issue-headline)))
+                    (let ((status (org-jira-get-issue-val 'status issue)))
+                      (insert (concat (cond (org-jira-use-status-as-todo
+                                             (upcase (replace-regexp-in-string " " "-" status)))
+                                            ((member status '("Closed" "Resolved")) "DONE")
+                                            ("TODO")) " "
+                                            issue-headline)))
                     (save-excursion
                       (unless (search-forward "\n" (point-max) 1)
                         (insert "\n")))
@@ -426,24 +442,24 @@ to you, but you can customize jql with a prefix argument. See
 
                     (mapc (lambda (heading-entry)
                             (ensure-on-issue-id
-                                issue-id
-                              (let* ((entry-heading (concat (symbol-name heading-entry) (format ": [[%s][%s]]" (concat jiralib-url "/browse/" issue-id) issue-id))))
-                                (setq p (org-find-exact-headline-in-buffer entry-heading))
-                                (if (and p (>= p (point-min))
-                                         (<= p (point-max)))
-                                    (progn
-                                      (goto-char p)
-                                      (org-narrow-to-subtree)
-                                      (goto-char (point-min))
-                                      (forward-line 1)
-                                      (delete-region (point) (point-max)))
-                                  (if (org-goto-first-child)
-                                      (org-insert-heading)
-                                    (goto-char (point-max))
-                                    (org-insert-subheading t))
-                                  (insert entry-heading "\n"))
+                             issue-id
+                             (let* ((entry-heading (concat (symbol-name heading-entry) (format ": [[%s][%s]]" (concat jiralib-url "/browse/" issue-id) issue-id))))
+                               (setq p (org-find-exact-headline-in-buffer entry-heading))
+                               (if (and p (>= p (point-min))
+                                        (<= p (point-max)))
+                                   (progn
+                                     (goto-char p)
+                                     (org-narrow-to-subtree)
+                                     (goto-char (point-min))
+                                     (forward-line 1)
+                                     (delete-region (point) (point-max)))
+                                 (if (org-goto-first-child)
+                                     (org-insert-heading)
+                                   (goto-char (point-max))
+                                   (org-insert-subheading t))
+                                 (insert entry-heading "\n"))
 
-                                (insert (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry issue))))))
+                               (insert (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry issue))))))
                           '(description))
                     (org-jira-update-comments-for-current-issue)
                     )))))
@@ -482,33 +498,33 @@ to you, but you can customize jql with a prefix argument. See
          (comments (jiralib-get-comments issue-id)))
     (mapc (lambda (comment)
             (ensure-on-issue-id issue-id
-              (let* ((comment-id (cdr (assoc 'id comment)))
-                     (comment-author (or (car (rassoc
-                                               (cdr (assoc 'author comment))
-                                               jira-users))
-                                         (cdr (assoc 'author comment))))
-                     (comment-headline (format "Comment: %s" comment-author)))
-                (setq p (org-find-entry-with-id comment-id))
-                (if (and p (>= p (point-min))
-                         (<= p (point-max)))
-                    (progn
-                      (goto-char p)
-                      (org-narrow-to-subtree)
-                      (delete-region (point-min) (point-max))))
-                (goto-char (point-max))
-                (unless (looking-at "^")
-                  (insert "\n"))
-                (insert "** ")
-                (insert comment-headline "\n")
-                (org-narrow-to-subtree)
-                (org-entry-put (point) "ID" comment-id)
-                (let ((created (org-jira-get-comment-val 'created comment))
-                      (updated (org-jira-get-comment-val 'updated comment)))
-                  (org-entry-put (point) "created" created)
-                  (unless (string= created updated)
-                    (org-entry-put (point) "updated" updated)))
-                (goto-char (point-max))
-                (insert (replace-regexp-in-string "^" "  " (or (cdr (assoc 'body comment)) ""))))))
+                                (let* ((comment-id (cdr (assoc 'id comment)))
+                                       (comment-author (or (car (rassoc
+                                                                 (cdr (assoc 'author comment))
+                                                                 jira-users))
+                                                           (cdr (assoc 'author comment))))
+                                       (comment-headline (format "Comment: %s" comment-author)))
+                                  (setq p (org-find-entry-with-id comment-id))
+                                  (if (and p (>= p (point-min))
+                                           (<= p (point-max)))
+                                      (progn
+                                        (goto-char p)
+                                        (org-narrow-to-subtree)
+                                        (delete-region (point-min) (point-max))))
+                                  (goto-char (point-max))
+                                  (unless (looking-at "^")
+                                    (insert "\n"))
+                                  (insert "** ")
+                                  (insert comment-headline "\n")
+                                  (org-narrow-to-subtree)
+                                  (org-entry-put (point) "ID" comment-id)
+                                  (let ((created (org-jira-get-comment-val 'created comment))
+                                        (updated (org-jira-get-comment-val 'updated comment)))
+                                    (org-entry-put (point) "created" created)
+                                    (unless (string= created updated)
+                                      (org-entry-put (point) "updated" updated)))
+                                  (goto-char (point-max))
+                                  (insert (replace-regexp-in-string "^" "  " (or (cdr (assoc 'body comment)) ""))))))
           (mapcan (lambda (comment) (if (string= (cdr (assoc 'author comment))
                                                  "admin")
                                         nil
@@ -544,7 +560,7 @@ to you, but you can customize jql with a prefix argument. See
   "get subtasks for the current issue"
   (interactive)
   (ensure-on-issue
-     (org-jira-get-issues-headonly (jiralib-do-jql-search (format "parent = %s" (org-jira-parse-issue-id))))))
+   (org-jira-get-issues-headonly (jiralib-do-jql-search (format "parent = %s" (org-jira-parse-issue-id))))))
 
 (defvar org-jira-project-read-history nil)
 (defvar org-jira-priority-read-history nil)
@@ -600,16 +616,16 @@ to you, but you can customize jql with a prefix argument. See
          (user (completing-read "Assignee: " (mapcar 'car jira-users)))
          (priority (car (rassoc (org-jira-read-priority) (jiralib-get-prioritys))))
          (ticket-struct (list (cons 'project project)
-                             (cons 'type (car (rassoc type (if (and (boundp 'parent-id) parent-id)
-                                                               (jiralib-get-subtask-types)
-                                                             (jiralib-get-issue-types)))))
-                             (cons 'summary (format "%s%s" summary
-                                                    (if (and (boundp 'parent-id) parent-id)
-                                                        (format " (subtask of [jira:%s])" parent-id)
-                                                      "")))
-                             (cons 'description description)
-                             (cons 'priority priority)
-                             (cons 'assignee (cdr (assoc user jira-users))))))
+                              (cons 'type (car (rassoc type (if (and (boundp 'parent-id) parent-id)
+                                                                (jiralib-get-subtask-types)
+                                                              (jiralib-get-issue-types)))))
+                              (cons 'summary (format "%s%s" summary
+                                                     (if (and (boundp 'parent-id) parent-id)
+                                                         (format " (subtask of [jira:%s])" parent-id)
+                                                       "")))
+                              (cons 'description description)
+                              (cons 'priority priority)
+                              (cons 'assignee (cdr (assoc user jira-users))))))
     ticket-struct))
 ;;;###autoload
 (defun org-jira-create-issue (project type summary description)
@@ -630,9 +646,9 @@ to you, but you can customize jql with a prefix argument. See
 (defun org-jira-create-subtask (project type summary description)
   "create an subtask issue"
   (interactive (ensure-on-issue (list (org-jira-read-project)
-                     (org-jira-read-subtask-type)
-                     (read-string "Summary: ")
-                     (read-string "Description: "))))
+                                      (org-jira-read-subtask-type)
+                                      (read-string "Summary: ")
+                                      (read-string "Description: "))))
   (if (or (equal project "")
           (equal type "")
           (equal summary ""))
@@ -653,16 +669,16 @@ to you, but you can customize jql with a prefix argument. See
           (if (looking-at "description: ")
               (org-jira-strip-string (org-get-entry))
             (error "Can not find description field for this issue")))
-        ((eq key 'summary)
-         (ensure-on-issue
-          (org-get-heading t t)))
-        (t
-         (when (symbolp key)
-           (setq key (symbol-name key)))
-         (when (string= key "key")
-           (setq key "ID"))
-         (or (org-entry-get (point) key)
-             "")))))
+         ((eq key 'summary)
+          (ensure-on-issue
+           (org-get-heading t t)))
+         (t
+          (when (symbolp key)
+            (setq key (symbol-name key)))
+          (when (string= key "key")
+            (setq key "ID"))
+          (or (org-entry-get (point) key)
+              "")))))
 
 (defvar org-jira-actions-history nil)
 (defun org-jira-read-action (actions)
@@ -726,8 +742,8 @@ to you, but you can customize jql with a prefix argument. See
           (field-key)
           (custom-fields-collector nil)
           (custom-fields (progn
-                           ;delete those elements in fields, which has
-                           ;already been set in custom-fields-collector
+                                        ;delete those elements in fields, which has
+                                        ;already been set in custom-fields-collector
 
                            (while fields
                              (setq fields (delete-if (lambda (strstr)
@@ -759,34 +775,34 @@ to you, but you can customize jql with a prefix argument. See
 
 (defun org-jira-update-issue-details (issue-id)
   (ensure-on-issue-id
-      issue-id
-    (let* ((org-issue-components (org-jira-get-issue-val-from-org 'components))
-           (org-issue-description (replace-regexp-in-string "^  " "" (org-jira-get-issue-val-from-org 'description)))
-           (org-issue-resolution (org-jira-get-issue-val-from-org 'resolution))
-           (org-issue-priority (org-jira-get-issue-val-from-org 'priority))
-           (org-issue-type (org-jira-get-issue-val-from-org 'type))
-           (org-issue-assignee (org-jira-get-issue-val-from-org 'assignee))
-           (org-issue-status (org-jira-get-issue-val-from-org 'status))
-           (issue (jiralib-get-issue issue-id))
-           (project (org-jira-get-issue-val 'project issue))
-           (project-components (jiralib-get-components project)))
+   issue-id
+   (let* ((org-issue-components (org-jira-get-issue-val-from-org 'components))
+          (org-issue-description (replace-regexp-in-string "^  " "" (org-jira-get-issue-val-from-org 'description)))
+          (org-issue-resolution (org-jira-get-issue-val-from-org 'resolution))
+          (org-issue-priority (org-jira-get-issue-val-from-org 'priority))
+          (org-issue-type (org-jira-get-issue-val-from-org 'type))
+          (org-issue-assignee (org-jira-get-issue-val-from-org 'assignee))
+          (org-issue-status (org-jira-get-issue-val-from-org 'status))
+          (issue (jiralib-get-issue issue-id))
+          (project (org-jira-get-issue-val 'project issue))
+          (project-components (jiralib-get-components project)))
 
-      (jiralib-update-issue issue-id ;(jiralib-update-issue "FB-1" '((components . ["10001" "10000"])))
-                            (list (cons
-                                   'components
-                                   (apply 'vector
-                                          (mapcan
-                                           (lambda (item)
-                                             (let ((comp-id (car (rassoc item project-components))))
-                                               (if comp-id
-                                                   (list comp-id)
-                                                 nil)))
-                                           (split-string org-issue-components ",\\s *"))))
-                                  (cons 'priority (car (rassoc org-issue-priority (jiralib-get-prioritys))))
-                                  (cons 'description org-issue-description)
-                                  (cons 'assignee org-issue-assignee)
-                                  (cons 'summary (org-jira-get-issue-val-from-org 'summary))))
-      (org-jira-get-issues (list (jiralib-get-issue issue-id))))))
+     (jiralib-update-issue issue-id ;(jiralib-update-issue "FB-1" '((components . ["10001" "10000"])))
+                           (list (cons
+                                  'components
+                                  (apply 'vector
+                                         (mapcan
+                                          (lambda (item)
+                                            (let ((comp-id (car (rassoc item project-components))))
+                                              (if comp-id
+                                                  (list comp-id)
+                                                nil)))
+                                          (split-string org-issue-components ",\\s *"))))
+                                 (cons 'priority (car (rassoc org-issue-priority (jiralib-get-prioritys))))
+                                 (cons 'description org-issue-description)
+                                 (cons 'assignee org-issue-assignee)
+                                 (cons 'summary (org-jira-get-issue-val-from-org 'summary))))
+     (org-jira-get-issues (list (jiralib-get-issue issue-id))))))
 
 
 (defun org-jira-parse-issue-id ()
