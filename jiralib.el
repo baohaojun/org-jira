@@ -427,9 +427,9 @@ will cache it."
 
 (defvar jiralib-assignable-users-cache nil)
 (defun jiralib-get-assignable-users (key)
-  "Return an assoc list mapping .
+  "Return an assoc list mapping user key and display name.
 
-This function will only ask JIRA for the list of codes once, than
+This function will only ask JIRA for the list of name once, than
 will cache it."
   (unless jiralib-assignable-users-cache
     (setq jiralib-assignable-users-cache
