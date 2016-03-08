@@ -375,7 +375,7 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
            (org-jira-transform-time-format tmp))
           ((eq key 'status)
            (if jiralib-use-restapi
-               (org-jira-find-value issue 'fields 'status 'statusCategory 'name)
+               (org-jira-find-value issue 'fields 'status 'name)
              (org-jira-find-value (jiralib-get-statuses) tmp)))
           ((eq key 'resolution)
            (if jiralib-use-restapi
