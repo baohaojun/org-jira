@@ -238,6 +238,7 @@ when invoking it through `jiralib-call', the call shoulbe be:
       ('getStatuses (jiralib--rest-call-it "/rest/api/2/status"))
       ('getIssueTypes (jiralib--rest-call-it "/rest/api/2/issuetype"))
       ('getUser (jiralib--rest-call-it "/rest/api/2/user" :params `((username . ,(first params)))))
+      ('getAssignableUsers (jiralib--rest-call-it "/rest/api/2/user/assignable/search" :params `((project . ,(first params))(maxResults . ,"1000"))))
       ('getVersions (jiralib--rest-call-it (format "/rest/api/2/project/%s/versions" (first params))))
       ('getWorklogs nil) ; fixme
       ('addComment (jiralib--rest-call-it
@@ -247,7 +248,7 @@ when invoking it through `jiralib-call', the call shoulbe be:
       ('createIssue (jiralib--rest-call-it
                      "/rest/api/2/issue"
                      :type "POST"
-                     :data (json-encode (first params))))
+                     :data (json-encode (list (cons 'fields (first params))))))
       ('createIssueWithParent (jiralib--rest-call-it
                                ))
       ('editComment (jiralib--rest-call-it
@@ -423,6 +424,17 @@ will cache it."
     (setq jiralib-priority-codes-cache
           (jiralib-make-assoc-list (jiralib-call "getPriorities") 'id 'name)))
   jiralib-priority-codes-cache)
+
+(defvar jiralib-assignable-users-cache nil)
+(defun jiralib-get-assignable-users (key)
+  "Return an assoc list mapping .
+
+This function will only ask JIRA for the list of codes once, than
+will cache it."
+  (unless jiralib-assignable-users-cache
+    (setq jiralib-assignable-users-cache
+          (jiralib-make-assoc-list (jiralib-call "getAssignableUsers" key) 'displayName 'key)))
+  jiralib-assignable-users-cache)
 
 (defvar jiralib-resolution-code-cache nil)
 
