@@ -803,7 +803,7 @@ See`org-jira-get-issue-list'"
   (let* ((parent-id nil)
          (ticket-struct (org-jira-get-issue-struct project type summary description)))
     (jiralib-create-issue ticket-struct)
-    (org-jira-get-issues)))
+    (org-jira-refresh-issue)))
 
 ;;;###autoload
 (defun org-jira-create-subtask (project type summary description)
