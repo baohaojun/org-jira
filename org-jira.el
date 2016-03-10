@@ -375,7 +375,7 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
            (org-jira-transform-time-format tmp))
           ((eq key 'status)
            (if jiralib-use-restapi
-               (org-jira-find-value issue 'fields 'status 'statusCategory 'name)
+               (org-jira-find-value issue 'fields 'status 'name)
              (org-jira-find-value (jiralib-get-statuses) tmp)))
           ((eq key 'resolution)
            (if jiralib-use-restapi
@@ -775,19 +775,19 @@ See`org-jira-get-issue-list'"
           (equal summary ""))
       (error "Must provide all information!"))
   (let* ((project-components (jiralib-get-components project))
-         (user (completing-read "Assignee: " (mapcar 'car jira-users)))
+         (user (completing-read "Assignee: " (mapcar 'car (jiralib-get-assignable-users project))))
          (priority (car (rassoc (org-jira-read-priority) (jiralib-get-priorities))))
-         (ticket-struct (list (cons 'project project)
-                              (cons 'type (car (rassoc type (if (and (boundp 'parent-id) parent-id)
+         (ticket-struct (list (cons 'project (list (cons 'key project)))
+                              (cons 'issuetype (list (cons 'id (car (rassoc type (if (and (boundp 'parent-id) parent-id)
                                                                 (jiralib-get-subtask-types)
-                                                              (jiralib-get-issue-types)))))
+                                                              (jiralib-get-issue-types)))))))
                               (cons 'summary (format "%s%s" summary
                                                      (if (and (boundp 'parent-id) parent-id)
                                                          (format " (subtask of [jira:%s])" parent-id)
                                                        "")))
                               (cons 'description description)
-                              (cons 'priority priority)
-                              (cons 'assignee (cdr (assoc user jira-users))))))
+                              (cons 'priority (list (cons 'id priority)))
+                              (cons 'assignee (list (cons 'name (cdr (assoc user (jiralib-get-assignable-users project)))))))))
     ticket-struct))
 ;;;###autoload
 (defun org-jira-create-issue (project type summary description)
@@ -802,7 +802,8 @@ See`org-jira-get-issue-list'"
       (error "Must provide all information!"))
   (let* ((parent-id nil)
          (ticket-struct (org-jira-get-issue-struct project type summary description)))
-    (org-jira-get-issues (list (jiralib-create-issue ticket-struct)))))
+    (jiralib-create-issue ticket-struct)
+    (org-jira-refresh-issue)))
 
 ;;;###autoload
 (defun org-jira-create-subtask (project type summary description)
