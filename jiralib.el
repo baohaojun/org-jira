@@ -299,6 +299,7 @@ when invoking it through `jiralib-call', the call shoulbe be:
                                                 'fields))
       ('progressWorkflowAction (jiralib--rest-call-it
                                 (format "/rest/api/2/issue/%s/transitions" (first params))
+                                :parser "none"
                                 :type "POST"
                                 :data (json-encode `(,(car (second params)) ,(car (third params))))))
       ('getUsers
@@ -321,7 +322,15 @@ when invoking it through `jiralib-call', the call shoulbe be:
                                       (replace-regexp-in-string "^/*" "" api)))
                   :sync t
                   :headers `(,jiralib-token ("Content-Type" . "application/json"))
-                  :parser 'json-read
+                  :parser (lambda ()
+                            (let ((parser (plist-get args :parser)))
+                              (unless (and (stringp parser)
+                                           (string-equal "none" parser))
+                                (if (or (and (symbolp parser)
+                                             (fboundp parser))
+                                        (functionp parser))
+                                    (funcall parser)
+                                  (json-read)))))
                   args)) nil))
 
 (defun jiralib--call-it (method &rest params)
