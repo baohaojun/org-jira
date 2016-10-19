@@ -272,17 +272,23 @@ when invoking it through `jiralib-call', the call shoulbe be:
                                       :params '((expand . "description,lead,url,projectKeys"))) nil))
       ('getResolutions (append (jiralib--rest-call-it
                                 "/rest/api/2/resolution") nil))
-      ('getAvailableActions (mapcar (lambda (trans) `(,(assoc 'name trans) ,(assoc 'id trans))) (cdar (jiralib--rest-call-it
-                                                                                                  (format "/rest/api/2/issue/%s/transitions" (first params))))))
-      ('getFieldsForAction (org-jira-find-value (car (let ((issue (first params))
-                                                           (action (second params)))
-                                                       (seq-filter (lambda (trans)
-                                                                     (or (string-equal action (org-jira-find-value trans 'id))
-                                                                         (string-equal action (org-jira-find-value trans 'name))))
-                                                                   (cdar (jiralib--rest-call-it
-                                                                          (format "/rest/api/2/issue/%s/transitions" (first params))
-                                                                          :params '((expand . "transitions.fields")))))))
-                                                'fields))
+      ('getAvailableActions (mapcar (lambda (trans) `(,(assoc 'name trans) ,(assoc 'id trans)))
+                                    (append (let* ((iss  (first params))
+                                                   (data (jiralib--rest-call-it
+                                                          (format "/rest/api/2/issue/%s/transitions" (first params))))
+                                                   (transitions (cdr (assoc 'transitions data))))
+                                              transitions)
+                                            nil)))
+      ('getFieldsForAction (org-jira-find-value
+                            (car (let ((issue (first params))
+                                       (action (second params)))
+                                   (seq-filter (lambda (trans)
+                                                 (or (string-equal action (org-jira-find-value trans 'id))
+                                                     (string-equal action (org-jira-find-value trans 'name))))
+                                               (cdr (assoc 'transitions (jiralib--rest-call-it
+                                                                         (format "/rest/api/2/issue/%s/transitions" (first params))
+                                                                         :params '((expand . "transitions.fields"))))))))
+                            'fields))
       ('progressWorkflowAction (jiralib--rest-call-it
                                 (format "/rest/api/2/issue/%s/transitions" (first params))
                                 :type "POST"
