@@ -29,7 +29,6 @@
 
 ;; Author: Alexandru Harsanyi (AlexHarsanyi@gmail.com)
 ;; Created: December, 2009
-;; Package-Requires: ((request "0.2.0"))
 ;; Keywords: soap, web-services, jira
 ;; Homepage: http://code.google.com/p/emacs-soap-client
 
@@ -300,10 +299,11 @@ when invoking it through `jiralib-call', the call shoulbe be:
                                                 'fields))
       ('progressWorkflowAction (jiralib--rest-call-it
                                 (format "/rest/api/2/issue/%s/transitions" (first params))
+                                :parser "none"
                                 :type "POST"
                                 :data (json-encode `(,(car (second params)) ,(car (third params))))))
       ('getUsers
-       (jiralib--rest-call-it (format "/rest/api/2/user/assignable/search?project=%s" (first params))
+       (jiralib--rest-call-it (format "/rest/api/2/user/assignable/search?project=%s&maxResults=10000" (first params))
                               :type "GET"))
       ('updateIssue (jiralib--rest-call-it
                      (format "/rest/api/2/issue/%s" (first params))
@@ -322,7 +322,15 @@ when invoking it through `jiralib-call', the call shoulbe be:
                                       (replace-regexp-in-string "^/*" "" api)))
                   :sync t
                   :headers `(,jiralib-token ("Content-Type" . "application/json"))
-                  :parser 'json-read
+                  :parser (lambda ()
+                            (let ((parser (plist-get args :parser)))
+                              (unless (and (stringp parser)
+                                           (string-equal "none" parser))
+                                (if (or (and (symbolp parser)
+                                             (fboundp parser))
+                                        (functionp parser))
+                                    (funcall parser)
+                                  (json-read)))))
                   args)) nil))
 
 (defun jiralib--call-it (method &rest params)
