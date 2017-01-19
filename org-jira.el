@@ -146,6 +146,9 @@ variables.
 (defvar org-jira-issue-id-history '()
   "Prompt history for issue id.")
 
+(defvar org-jira-global-tag nil
+  "Default tag to add to every issue")
+
 (defmacro ensure-on-issue (&rest body)
   "Make sure we are on an issue heading, before executing BODY."
 
@@ -469,6 +472,14 @@ See`org-jira-get-issue-list'"
                        (point))
                      (replace-regexp-in-string "-" "_" issue-id)
                      nil)
+                    (when org-jira-global-tag
+                      (org-change-tag-in-region
+                       (point-min)
+                       (save-excursion
+                         (forward-line 1)
+                         (point))
+                       org-jira-global-tag
+                       nil))
 
                     (mapc (lambda (entry)
                             (let ((val (org-jira-get-issue-val entry issue)))
